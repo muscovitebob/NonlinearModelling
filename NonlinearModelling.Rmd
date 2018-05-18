@@ -1,0 +1,13 @@
+---
+title: "Nonlinear Modelling"
+output: html_notebook
+---
+
+```{r}
+set.seed(10)
+prostate = get(load("prostate2.Rdata"))
+prostate$svi = as.factor(prostate$svi)
+attach(prostate)
+options(digits=3)
+```
+
