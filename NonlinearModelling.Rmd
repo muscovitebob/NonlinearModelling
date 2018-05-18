@@ -11,3 +11,33 @@ attach(prostate)
 options(digits=3)
 ```
 
+# Exploring the association between Cscore and lpsa
+
+```{r}
+defaultfit = lm(Cscore ~ lpsa, data = prostate)
+plot(Cscore ~ lpsa)
+abline(defaultfit)
+```
+
+```{r}
+summary(defaultfit)
+```
+
+It can be seen that the trend between Cscore and lpsa does not appear perfectly linear, just by visual inspection. Some summary statistics confirm that a simple linear model only explains about half of the variance in this association.
+
+Having confirmed our suspicion that there may be some non-linearity involved, we can turn to more powerful diagnostics to determine more conclusively what is happening.
+
+```{r}
+plot(defaultfit)
+```
+
+The plot of residuals against fitted values clearly resembles a parabola more than a straight line expected of a dataset with good linearity. Thus we strongly suspect that there is a large deviation from our assumption of linearity.
+
+The Q-Q plot appears much less concerning, but there is still a notable parabolic relationship. The tails of the plot are clearly edging upwards, especially in the top half, where many data points of concern are located. Data point number 96 is particularly problematic. The Q-Q plot thus clearly indicates a small departure from the assumption of normality.
+
+The scale-location plot again demonstrates a strong parabolic pattern, although there is a good spread of points - but again the problematic data points at the higher end are highlighted. Thus we strongly suspect that the residuals are not spread equally along the predictor ranges, and thus the assumption of homoscedasticity is violated as well.
+
+The last diagnostic plot, residuals against leverage, shows that data point 96 is indeed a very influential case, and thus we would probably alter our model significantly if we exluded it from analysis. Data points 97 and 1 are also relatively influential cases.
+
+Thus we can conclude rather confidently that most of the assumptions underlying linearity do not hold up very well for this association.
+
