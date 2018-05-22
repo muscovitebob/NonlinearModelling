@@ -102,7 +102,7 @@ for (i in 2:10){
 smooth_list <- lapply(smooth_names, function(x)get(x))
 mse.smooth = c()
 for (model in smooth_list){
-  MSE_smoth =mean((Cscore - predict(model, prostate))[-sample]^2)
+  MSE_smooth =mean((Cscore - predict.smooth.spline(model, prostate))[-sample]^2)
   mse.smooth = c(mse.smooth,MSE_model)
 }
 min(mse.smooth)
