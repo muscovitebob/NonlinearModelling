@@ -41,3 +41,13 @@ The last diagnostic plot, residuals against leverage, shows that data point 96 i
 
 Thus we can conclude rather confidently that most of the assumptions underlying linearity do not hold up very well for this association.
 
+
+
+# CUBIC SPLINE
+```{r}
+library(splines)
+
+
+
+```
+
