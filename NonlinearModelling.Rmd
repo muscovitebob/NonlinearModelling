@@ -51,3 +51,28 @@ library(splines)
 
 ```
 
+# Nonlinear modelling
+
+First we randomise the rows and split the data set into test and validation subsets.
+
+```{r}
+sample = sample.int(n = nrow(prostate), size = floor(.5*nrow(prostate)), replace = F)
+train = prostate[sample,]
+test = prostate[-sample,]
+```
+
+
+## Polynomial regression
+
+We can attempt to construct a range of different degree polynomial regression models. 
+
+```{r}
+poly_list = list()
+for (i in 1:9){
+  model = lm(Cscore~poly(lpsa,i), data=prostate)
+  poly_list = c(poly_list, list(model))
+}
+```
+
+
+>>>>>>> 265353b5dae8895e9d7bf7586662a5874d6039f5
