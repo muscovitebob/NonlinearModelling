@@ -54,14 +54,18 @@ test = prostate[-sample,]
 
 ## Polynomial regression
 
-We can attempt to construct a range of different degree polynomial regression models. 
+We can attempt to construct a range of different degree polynomial regression models and use the validation set approach to choose the best one.
 
 ```{r}
 poly_list = list()
+MSE_list = list()
 for (i in 1:9){
-  model = lm(Cscore~poly(lpsa,i), data=prostate)
+  model = lm(Cscore~poly(lpsa,i), data=prostate, subset=sample)
   poly_list = c(poly_list, list(model))
+  mean = mean((Cscore-predict(model,prostate))[-sample]^2)
+  MSE_list = c(MSE_list, list(mean))
 }
+best_poly_model = poly_list[[which.min(MSE_list)]]
 ```
 
-
+As can be seen, the model that has the best test MSE is a third degree polynomial model.
