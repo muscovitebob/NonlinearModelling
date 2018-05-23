@@ -57,17 +57,20 @@ test = prostate[-sample,]
 
 ## Polynomial regression
 
-We can attempt to construct a range of different degree polynomial regression models. 
+We can attempt to construct a range of different degree polynomial regression models. We will do this up to the 9th degree polynomial.
 
 ```{r}
 poly_list = list()
+MSE_list = list()
 for (i in 1:9){
-  model = lm(Cscore~poly(lpsa,i), data=prostate)
+  model = lm(Cscore~poly(lpsa,i), data=prostate, subset=sample)
   poly_list = c(poly_list, list(model))
+  mean = mean((Cscore-predict(model,prostate))[-sample]^2)
+  MSE_list = c(MSE_list, list(mean))
 }
+best_poly_model = poly_list[[which.min(MSE_list)]]
 ```
 
-<<<<<<< HEAD
 As can be seen, the model that has the best test MSE is a third degree polynomial model. We can further confirm this using an ANOVA method for picking the best model.
 
 ```{r}
@@ -85,12 +88,13 @@ prediction = predict(fit, newdata = list(lpsa = lpsa.grid), se = T)
 SE.bands = cbind(prediction$fit+2*prediction$se.fit, prediction$fit-2*prediction$se.fit)
 
 plot(lpsa, Cscore, xlim=lpsalims)
-title("Third degree polynomial", outer = T)
+title("Third degree polynomial")
 lines(lpsa.grid, prediction$fit)
 matlines(lpsa.grid, SE.bands, lwd=1, col="red", lty=2)
-=======
+```
 
-## CUBIC SPLINE
+## Cubic splines
+
 A cubic spline will always have at least four degrees of freedom, since we have the three variables and at least one knot. We let the knots be put at uniform quantiles.
 
 ```{r}
@@ -114,7 +118,8 @@ min(mse)
 ```
 
 
-## Smoothing Spline
+## Smoothing Splines
+
 ```{r}
 smooth_names = paste("smooth.",1:10,sep = "")
 
@@ -132,6 +137,5 @@ for (model in smooth_list){
 min(mse.smooth)
 ##smoothspline_CV = smooth.spline( Cscore[sample],lpsa[sample], cv = TRUE)
 ##mean((Cscore-predict(smoothspline_CV, prostate))[-sample]^2)
->>>>>>> ff4f4a76499f9730c2865411fbd814e47ba160aa
 ```
 
