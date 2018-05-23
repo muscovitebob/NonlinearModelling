@@ -159,3 +159,13 @@ best_smooth_model = smooth_list[[which.min(MSE_list)]]
 ##mean((Cscore-predict(smoothspline_CV, prostate))[-sample]^2)
 ```
 
+
+
+
+# General additive model with all variables
+```{r}
+library(gam)
+gam.all = gam(Cscore~s(lcavol,5)+s(lweight,5)+s(age,5)+s(lbph,5)+s(lcp,5)+s(lpsa,5)+svi, data = train)
+plot(gam.all)
+```
+Since svi is a categorical variable, we cannot use a spline for it.
