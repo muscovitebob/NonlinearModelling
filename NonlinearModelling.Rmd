@@ -83,7 +83,7 @@ Model 3 is a significant improvement over Model 2, whereas Model 4 gives no sign
 fit = lm(Cscore~poly(lpsa, 3), data = prostate)
 
 lpsalims = range(lpsa)
-lpsa.grid = seq(lpsalims[1], lpsalims[2])
+lpsa.grid = seq(lpsalims[1], lpsalims[2], length.out = 50)
 prediction = predict(fit, newdata = list(lpsa = lpsa.grid), se = T)
 SE.bands = cbind(prediction$fit+2*prediction$se.fit, prediction$fit-2*prediction$se.fit)
 
@@ -100,41 +100,61 @@ A cubic spline will always have at least four degrees of freedom, since we have 
 ```{r}
 library(splines)
 
-cubic_names = paste("cubic.",4:10,sep = "")
-
+cubic_list = c()
+MSE_list = c()
 for (i in 4:10){
-  name = paste("cubic.", i, sep = "")
-  cubic = lm(Cscore~bs(lpsa , df = i ),data=prostate[sample,])
-  assign(name, cubic)
+  model = lm(Cscore~bs(lpsa, df = i),data=prostate, subset=sample)
+  cubic_list = c(cubic_list, model)
+  mean = mean((Cscore - predict(model, prostate))[-sample]^2)
+  MSE_list = c(MSE_list, list(mean))
 }
-cubic_list <- lapply(cubic_names, function(x)get(x))
-## Cross validation
-mse = c()
-for (model in cubic_list){
-  MSE_model =mean((Cscore - predict(model, prostate))[-sample]^2)
-  mse = c(mse,MSE_model)
-}
-min(mse)
+best_cubic_model = cubic_list[[which.min(MSE_list)]]
+best_cubic_model
+```
+
+```{r}
+fit = lm(Cscore~bs(lpsa, df = 4),data=prostate, subset=sample)
+
+lpsalims = range(lpsa)
+lpsa.grid = seq(lpsalims[1], lpsalims[2], length.out = 50)
+prediction = predict(fit, newdata = list(lpsa = lpsa.grid), se = T)
+SE.bands = cbind(prediction$fit+2*prediction$se.fit, prediction$fit-2*prediction$se.fit)
+
+plot(lpsa, Cscore, xlim=lpsalims)
+title("Single knot cubic spline")
+lines(lpsa.grid, prediction$fit)
+matlines(lpsa.grid, SE.bands, lwd=1, col="red", lty=2)
 ```
 
 
 ## Smoothing Splines
 
-```{r}
-smooth_names = paste("smooth.",1:10,sep = "")
+Since we have dulicated values present in lpsa, we can use generalised cross validation to arrive at the best possible value of the tuning parameter, with best defined as the lowest cross-validated RSS.
 
+```{r}
+fit = smooth.spline(lpsa, Cscore, cv = F)
+fit$df
+```
+
+Unfortunately the best possible degrees of freedom value here is quite large, and we would like to constrain ourselves to a maximum of 10 degrees of freedom.
+
+```{r}
+lpsalims = range(lpsa)
+lpsa.grid = seq(lpsalims[1], lpsalims[2], length.out = 50)
+prediction = predict(fit, newdata = list(lpsa = lpsa.grid))
+
+smooth_list = c()
+MSE_list = c()
 for (i in 2:10){
-  name = paste("smooth.", i, sep = "")
-  smoothspline = smooth.spline(train$lpsa, train$Cscore,  df= i )
-  assign(name, smoothspline)
+  model = smooth.spline(train$lpsa, train$Cscore,  df= i)
+  smooth_list = c(smooth_list, list(model))
+  lpsalims = range(train$lpsa)
+  lpsa.grid = seq(lpsalims[1], lpsalims[2], length.out = length(Cscore))
+  prediction = predict(model, newdata = list(lpsa = lpsa.grid))
+  mean = mean((Cscore - prediction$y)[-sample]^2)
+  MSE_list = c(MSE_list, mean)
 }
-smooth_list <- lapply(smooth_names, function(x)get(x))
-mse.smooth = c()
-for (model in smooth_list){
-  MSE_smooth =mean((Cscore - predict.smooth.spline(model, prostate))[-sample]^2)
-  mse.smooth = c(mse.smooth,MSE_model)
-}
-min(mse.smooth)
+best_smooth_model = smooth_list[[which.min(MSE_list)]]
 ##smoothspline_CV = smooth.spline( Cscore[sample],lpsa[sample], cv = TRUE)
 ##mean((Cscore-predict(smoothspline_CV, prostate))[-sample]^2)
 ```

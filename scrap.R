@@ -8,6 +8,9 @@ options(digits=3)
 sample = sample.int(n = nrow(prostate), size = floor(.5*nrow(prostate)), replace = F)
 train = prostate[sample,]
 test = prostate[-sample,]
+
+# polynomial regression
+
 poly_list = list()
 MSE_list = list()
 for (i in 1:9){
@@ -29,4 +32,9 @@ plot(lpsa, Cscore, xlim=lpsalims)
 title("Third degree polynomial", outer = T)
 lines(lpsa.grid, prediction$fit)
 matlines(lpsa.grid, SE.bands, lwd=1, col="red", lty=2)
+
+# cubic splines
+
+
+
 
