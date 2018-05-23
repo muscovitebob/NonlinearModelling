@@ -43,6 +43,7 @@ The last diagnostic plot, residuals against leverage, shows that data point 96 i
 
 Thus we can conclude rather confidently that most of the assumptions underlying linearity do not hold up very well for this association.
 
+
 # Nonlinear modelling
 
 First we randomise the rows and split the data set into test and validation subsets.
@@ -56,20 +57,17 @@ test = prostate[-sample,]
 
 ## Polynomial regression
 
-We can attempt to construct a range of different degree polynomial regression models and use the validation set approach to choose the best one.
+We can attempt to construct a range of different degree polynomial regression models. 
 
 ```{r}
 poly_list = list()
-MSE_list = list()
 for (i in 1:9){
-  model = lm(Cscore~poly(lpsa,i), data=prostate, subset=sample)
+  model = lm(Cscore~poly(lpsa,i), data=prostate)
   poly_list = c(poly_list, list(model))
-  mean = mean((Cscore-predict(model,prostate))[-sample]^2)
-  MSE_list = c(MSE_list, list(mean))
 }
-best_poly_model = poly_list[[which.min(MSE_list)]]
 ```
 
+<<<<<<< HEAD
 As can be seen, the model that has the best test MSE is a third degree polynomial model. We can further confirm this using an ANOVA method for picking the best model.
 
 ```{r}
@@ -90,5 +88,50 @@ plot(lpsa, Cscore, xlim=lpsalims)
 title("Third degree polynomial", outer = T)
 lines(lpsa.grid, prediction$fit)
 matlines(lpsa.grid, SE.bands, lwd=1, col="red", lty=2)
+=======
+
+## CUBIC SPLINE
+A cubic spline will always have at least four degrees of freedom, since we have the three variables and at least one knot. We let the knots be put at uniform quantiles.
+
+```{r}
+library(splines)
+
+cubic_names = paste("cubic.",4:10,sep = "")
+
+for (i in 4:10){
+  name = paste("cubic.", i, sep = "")
+  cubic = lm(Cscore~bs(lpsa , df = i ),data=prostate[sample,])
+  assign(name, cubic)
+}
+cubic_list <- lapply(cubic_names, function(x)get(x))
+## Cross validation
+mse = c()
+for (model in cubic_list){
+  MSE_model =mean((Cscore - predict(model, prostate))[-sample]^2)
+  mse = c(mse,MSE_model)
+}
+min(mse)
+```
+
+
+## Smoothing Spline
+```{r}
+smooth_names = paste("smooth.",1:10,sep = "")
+
+for (i in 2:10){
+  name = paste("smooth.", i, sep = "")
+  smoothspline = smooth.spline(train$lpsa, train$Cscore,  df= i )
+  assign(name, smoothspline)
+}
+smooth_list <- lapply(smooth_names, function(x)get(x))
+mse.smooth = c()
+for (model in smooth_list){
+  MSE_smooth =mean((Cscore - predict.smooth.spline(model, prostate))[-sample]^2)
+  mse.smooth = c(mse.smooth,MSE_model)
+}
+min(mse.smooth)
+##smoothspline_CV = smooth.spline( Cscore[sample],lpsa[sample], cv = TRUE)
+##mean((Cscore-predict(smoothspline_CV, prostate))[-sample]^2)
+>>>>>>> ff4f4a76499f9730c2865411fbd814e47ba160aa
 ```
 
