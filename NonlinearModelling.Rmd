@@ -4,6 +4,8 @@ output: html_notebook
 ---
 
 ```{r}
+library(nlme)
+library(ggplot2)
 set.seed(10)
 prostate = get(load("prostate2.Rdata"))
 prostate$svi = as.factor(prostate$svi)
@@ -68,4 +70,25 @@ for (i in 1:9){
 best_poly_model = poly_list[[which.min(MSE_list)]]
 ```
 
-As can be seen, the model that has the best test MSE is a third degree polynomial model.
+As can be seen, the model that has the best test MSE is a third degree polynomial model. We can further confirm this using an ANOVA method for picking the best model.
+
+```{r}
+eval(parse(text=paste("anova(",paste("poly_list[[",1:length(poly_list),"]]",sep="",collapse=","),")")))
+```
+
+Model 3 is a significant improvement over Model 2, whereas Model 4 gives no significant improvement under a 0.05 significant threshold. Thus a second or third degree polynomial model provides a good fit to the data, and using our previous test MSE result we can pick the third degree polynomial as the best model with some confidence.
+
+```{r}
+fit = lm(Cscore~poly(lpsa, 3), data = prostate)
+
+lpsalims = range(lpsa)
+lpsa.grid = seq(lpsalims[1], lpsalims[2])
+prediction = predict(fit, newdata = list(lpsa = lpsa.grid), se = T)
+SE.bands = cbind(prediction$fit+2*prediction$se.fit, prediction$fit-2*prediction$se.fit)
+
+plot(lpsa, Cscore, xlim=lpsalims)
+title("Third degree polynomial", outer = T)
+lines(lpsa.grid, prediction$fit)
+matlines(lpsa.grid, SE.bands, lwd=1, col="red", lty=2)
+```
+
