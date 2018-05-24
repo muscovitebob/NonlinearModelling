@@ -15,8 +15,15 @@ options(digits=3)
 
 # Exploring the association between Cscore and lpsa
 
+First we randomise the rows and split the data set into a training and validation subset.
 ```{r}
-defaultfit = lm(Cscore ~ lpsa, data = prostate)
+sample = sample.int(n = nrow(prostate), size = floor(.5*nrow(prostate)), replace = F)
+train = prostate[sample,]
+test = prostate[-sample,]
+```
+
+```{r}
+defaultfit = lm(Cscore ~ lpsa, data = prostate, subset = sample)
 plot(Cscore ~ lpsa)
 abline(defaultfit)
 ```
@@ -25,7 +32,7 @@ abline(defaultfit)
 summary(defaultfit)
 ```
 
-It can be seen that the trend between Cscore and lpsa does not appear perfectly linear, just by visual inspection. Some summary statistics confirm that a simple linear model only explains about half of the variance in this association.
+It can be seen that the trend between Cscore and lpsa does not appear perfectly linear, just by visual inspection. Some summary statistics confirm that a simple linear model only explains about half of the variance in this association (R²adj = 50,8%).
 
 Having confirmed our suspicion that there may be some non-linearity involved, we can turn to more powerful diagnostics to determine more conclusively what is happening.
 
@@ -39,25 +46,16 @@ The Q-Q plot appears much less concerning, but there is still a notable paraboli
 
 The scale-location plot again demonstrates a strong parabolic pattern, although there is a good spread of points - but again the problematic data points at the higher end are highlighted. Thus we strongly suspect that the residuals are not spread equally along the predictor ranges, and thus the assumption of homoscedasticity is violated as well.
 
-The last diagnostic plot, residuals against leverage, shows that data point 96 is indeed a very influential case, and thus we would probably alter our model significantly if we exluded it from analysis. Data points 97 and 1 are also relatively influential cases.
+The last diagnostic plot, residuals against leverage, shows that data point 96 is indeed a very influential case, and thus we would probably alter our model significantly if we exluded it from analysis. Data point 1 is also relatively influential cases.
 
 Thus we can conclude rather confidently that most of the assumptions underlying linearity do not hold up very well for this association.
 
 
 # Nonlinear modelling
 
-First we randomise the rows and split the data set into test and validation subsets.
-
-```{r}
-sample = sample.int(n = nrow(prostate), size = floor(.5*nrow(prostate)), replace = F)
-train = prostate[sample,]
-test = prostate[-sample,]
-```
-
-
 ## Polynomial regression
 
-We can attempt to construct a range of different degree polynomial regression models. We will do this up to the 9th degree polynomial.
+The first model we constructed was a polynomial regression. We will do this up to the 9th degree polynomial, since this equals ten degrees of freedom.
 
 ```{r}
 poly_list = list()
@@ -68,7 +66,6 @@ for (i in 1:9){
   mean = mean((Cscore-predict(model,prostate))[-sample]^2)
   MSE_list = c(MSE_list, list(mean))
 }
-best_poly_model = poly_list[[which.min(MSE_list)]]
 ```
 
 As can be seen, the model that has the best test MSE is a third degree polynomial model. We can further confirm this using an ANOVA method for picking the best model.
@@ -77,10 +74,10 @@ As can be seen, the model that has the best test MSE is a third degree polynomia
 eval(parse(text=paste("anova(",paste("poly_list[[",1:length(poly_list),"]]",sep="",collapse=","),")")))
 ```
 
-Model 3 is a significant improvement over Model 2, whereas Model 4 gives no significant improvement under a 0.05 significant threshold. Thus a second or third degree polynomial model provides a good fit to the data, and using our previous test MSE result we can pick the third degree polynomial as the best model with some confidence.
+Model 3 is a significant improvement over Model 2, whereas Model 4 gives no significant improvement under a 0.05 significance threshold. Thus a second or third degree polynomial model provides a good fit to the data, and using our previous test MSE result we can pick the third degree polynomial as the best model with some confidence.
 
 ```{r}
-fit = lm(Cscore~poly(lpsa, 3), data = prostate)
+best_poly_model = lm(Cscore~poly(lpsa, 3), data = prostate)
 
 lpsalims = range(lpsa)
 lpsa.grid = seq(lpsalims[1], lpsalims[2], length.out = 50)
@@ -95,7 +92,7 @@ matlines(lpsa.grid, SE.bands, lwd=1, col="red", lty=2)
 
 ## Cubic splines
 
-A cubic spline will always have at least four degrees of freedom, since we have the three variables and at least one knot. We let the knots be put at uniform quantiles.
+The next regression model we construct is a cubic spline. Here, we start from four degrees of freedom, since a cubic spline has three polynomial terms (first, second and third order) and at least one knot. We let the knots be put at uniform quantiles.
 
 ```{r}
 library(splines)
@@ -113,7 +110,7 @@ best_cubic_model
 ```
 
 ```{r}
-fit = lm(Cscore~bs(lpsa, df = 4),data=prostate, subset=sample)
+best_cubic = lm(Cscore~bs(lpsa, df = 4),data=prostate, subset=sample)
 
 lpsalims = range(lpsa)
 lpsa.grid = seq(lpsalims[1], lpsalims[2], length.out = 50)
@@ -129,7 +126,7 @@ matlines(lpsa.grid, SE.bands, lwd=1, col="red", lty=2)
 
 ## Smoothing Splines
 
-Since we have dulicated values present in lpsa, we can use generalised cross validation to arrive at the best possible value of the tuning parameter, with best defined as the lowest cross-validated RSS.
+The last model we construct is a smoothing spline. Since we have duplicated values present in lpsa, we can use generalised cross validation to arrive at the best possible value of the tuning parameter, with best defined as the lowest cross-validated RSS.
 
 ```{r}
 fit = smooth.spline(lpsa, Cscore, cv = F)
@@ -140,6 +137,7 @@ Unfortunately the best possible degrees of freedom value here is quite large, an
 
 ```{r}
 plot(lpsa, Cscore)
+<<<<<<< HEAD
 fit2 = smooth.spline(lpsa[sample], Cscore[sample], cv=T)
 lpsalims = range(lpsa)
 lpsa.grid = seq(lpsalims[1], lpsalims[2])
@@ -148,8 +146,31 @@ lines(prediction)
 predictedVals = predict(fit2, test$lpsa)$y
 errors = test$Cscore - predictedVals
 mean(errors^2)
+=======
+lines(best_smooth_model)
+fit2 = smooth.spline(lpsa, Cscore, cv=F)
+lines(fit2)
+
+>>>>>>> bc5354aad92ea50283f829f391288e4e4af2c489
 ```
 
+## Comparison of all the models with the linear model
+
+At last, we compare all the models to see which one gives us the best test error.
+
+```{r}
+linear.mse = mean((Cscore-predict(defaultfit, prostate))[-sample]^2)
+poly.mse = mean((Cscore-predict(best_poly_model, prostate))[-sample]^2)
+cubic.mse =  mean((Cscore-predict(best_cubic, prostate))[-sample]^2)
+#smooth.mse = mean((Cscore-predict(best_smooth_model, prostate))[-sample]^2)
+linear.mse
+poly.mse
+cubic.mse
+
+```
+These are the test mean square errors for the linear, polynomial and cubic spline models respectively. The polynomial regression and cubic spline are both better models than the linear regression, and the polynomial regression is still a lot better than the spline with a test MSE error of 260. 
+
+We are a bit surprised that the polynomial regression is the best model, since it is a cubic model and the cubic spline also uses a cubic model, in this case with one knot. We think that the cause of this difference is that the knot adds too much variance in our case. 
 
 
 
@@ -209,7 +230,7 @@ aic_1 = getAIC("gam.1.",2)
 aic_1
 gam.1 = gam.1.1
 ```
-
+To select the best backwards selection model, we first manually perform backwards selection on the models. The best model with a specified number of variables is selected by using the AIC, we started for every continuous variable with the degrees of freedom set to five. We use AIC, even though the algorithm in ISLR tells us to use the R² value, since this value is readily available in the summary and we are not sure how good of a measure R² is for a GAM.
 ```{r}
 gam5 = gam(Cscore~s(lcavol,5)+s(lweight,5)+s(lcp,5)+s(lpsa,5)+svi, data = train)
 gam4 = gam(Cscore~s(lcavol,5)+s(lcp,5)+s(lpsa,5)+svi, data = train)
@@ -226,12 +247,12 @@ testerrs = c(gam5.mse,gam4.mse,gam3.mse,gam2.mse,gam1.mse)
 testerrs
 
 ```
-The model with two variables has the lowest test error, so we used this model for the rest of our analysis, to vary the degrees of freedom of the predictor variables.
+To select the best model out of all the models with different numbers of variables, we use cross-validation. The model with two variables has the lowest test error, so we used this model for the rest of our analysis, to vary the degrees of freedom of the predictor variables.
 
 ```{r}
 MSE = 5000
-for (i in 1:10){
-  for (j in 1:10){
+for (i in 1:15){
+  for (j in 1:15){
     model = gam(Cscore~s(lcp,i)+s(lpsa,j), data = train)
     mse = mean((Cscore-predict(model, prostate))[-sample]^2)
     if (mse < MSE){
@@ -241,5 +262,12 @@ for (i in 1:10){
     }
   }
 }
+i.select
+j.select
+backwards_selected = gam(Cscore~s(lcp,2)+s(lpsa,3), data = train)
+summary(backwards_selected)
 ```
+We select the model with the lowest test mean squared error as the best model. The degrees of freedom of both predictor variables is varied between one and fifteen. As we can see, the best model has two degrees of freedom for lcp, and three degrees of freedom for lpsa.
+
+## Comparison to linear models
 
