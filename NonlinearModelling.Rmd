@@ -137,7 +137,6 @@ Unfortunately the best possible degrees of freedom value here is quite large, an
 
 ```{r}
 plot(lpsa, Cscore)
-<<<<<<< HEAD
 fit2 = smooth.spline(lpsa[sample], Cscore[sample], cv=T)
 lpsalims = range(lpsa)
 lpsa.grid = seq(lpsalims[1], lpsalims[2])
@@ -145,13 +144,8 @@ prediction = predict(fit2, newdata = list(lpsa = lpsa.grid), se=T, data = prosta
 lines(prediction)
 predictedVals = predict(fit2, test$lpsa)$y
 errors = test$Cscore - predictedVals
-mean(errors^2)
-=======
-lines(best_smooth_model)
-fit2 = smooth.spline(lpsa, Cscore, cv=F)
-lines(fit2)
-
->>>>>>> bc5354aad92ea50283f829f391288e4e4af2c489
+smooth.mse = mean(errors^2)
+smooth.mse
 ```
 
 ## Comparison of all the models with the linear model
