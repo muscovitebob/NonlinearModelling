@@ -1,5 +1,6 @@
 library(nlme)
 library(ggplot2)
+library(gam)
 set.seed(10)
 prostate = get(load("prostate2.Rdata"))
 prostate$svi = as.factor(prostate$svi)
@@ -35,6 +36,11 @@ matlines(lpsa.grid, SE.bands, lwd=1, col="red", lty=2)
 
 # cubic splines
 
+# Optimising the GAM using backwards selection
 
+# first we can check for concurvity - whether some of our full GAM model terms can be approximated
+# by the others
 
+gam.all = gam(Cscore~s(lcavol,5)+s(lweight,5)+s(age,5)+s(lbph,5)+s(lcp,5)+s(lpsa,5), data = train)
 
+gam.nonrest = gam(Cscore~s(lcavol)+s(lweight)+s(age)+s(lbph)+s(lcp)+s(lpsa)+svi, data = train)
