@@ -175,4 +175,80 @@ If we look at the summary of the full GAM model, we can see that the predictor v
 
 We also looked at the mean test error, which is 570 for this model. this is quite a bit lower than the forward selected model, which had a test MSE of 803. So it seems like a good model for this dataset.
 
-We can also see that the model is not as smooth near the edges for some of the predictors. This is because of the sparseness of the data near the outliers. All in all, we think that this model is good
+We can also see that the model is not as smooth near the edges for some of the predictors. This is because of the sparseness of the data near the outliers. All in all, we think that this model is good.
+
+# Backwards selection of the General Additive Model
+
+```{r}
+getAIC <- function(data, nbloops){
+namelist = c()
+for (i in 1:nbloops){
+  name = paste(data,i,sep ="")
+  namelist = c(namelist,name)
+}
+aiclist = lapply(namelist, function(x)get(x))
+aiclist
+}
+
+gam.5 = gam(Cscore~s(lcavol,5)+s(lweight,5)+s(lcp,5)+s(lpsa,5)+svi, data = train)$aic
+gam.4.1 = gam(Cscore~+s(lweight,5)+s(lcp,5)+s(lpsa,5)+svi, data = train)$aic
+gam.4.2 = gam(Cscore~s(lcavol,5)+s(lcp,5)+s(lpsa,5)+svi, data = train)$aic
+gam.4.3 = gam(Cscore~s(lcavol,5)+s(lweight,5)+s(lpsa,5)+svi, data = train)$aic
+gam.4.4 = gam(Cscore~s(lcavol,5)+s(lweight,5)+s(lcp,5)+svi, data = train)$aic
+gam.4.5 = gam(Cscore~s(lcavol,5)+s(lweight,5)+s(lcp,5)+s(lpsa,5), data = train)$aic
+
+aic_4 = getAIC("gam.4.",5)
+gam.4 = gam.4.2
+gam.3.1 = gam(Cscore~s(lcp,5)+s(lpsa,5)+svi, data = train)$aic
+gam.3.2 = gam(Cscore~s(lcavol,5)+s(lpsa,5)+svi, data = train)$aic
+gam.3.3 = gam(Cscore~s(lcavol,5)+s(lcp,5)+svi, data = train)$aic
+gam.3.4 = gam(Cscore~s(lcavol,5)+s(lcp,5)+s(lpsa,5), data = train)$aic
+aic_3 = getAIC("gam.3.",4)
+
+gam.3 = gam.3.1
+gam.2.1 = gam(Cscore~s(lpsa,5)+svi, data = train)$aic
+gam.2.2 = gam(Cscore~s(lcp,5)+svi, data = train)$aic
+gam.2.3 = gam(Cscore~s(lcp,5)+s(lpsa,5), data = train)$aic
+aic_2 = getAIC("gam.2.", 3)
+
+gam.2 = gam.2.3
+gam.1.1 = gam(Cscore~s(lpsa,5), data = train)$aic
+gam.1.2 = gam(Cscore~s(lcp,5), data = train)$aic
+aic_1 = getAIC("gam.1.",2)
+aic_1
+gam.1 = gam.1.1
+```
+
+```{r}
+gam5 = gam(Cscore~s(lcavol,5)+s(lweight,5)+s(lcp,5)+s(lpsa,5)+svi, data = train)
+gam4 = gam(Cscore~s(lcavol,5)+s(lcp,5)+s(lpsa,5)+svi, data = train)
+gam3 = gam(Cscore~s(lcp,5)+s(lpsa,5)+svi, data = train)
+gam2 = gam(Cscore~s(lcp,5)+s(lpsa,5), data = train)
+gam1 = gam(Cscore~s(lpsa,5), data = train)
+
+gam5.mse = mean((Cscore-predict(gam5, prostate))[-sample]^2)
+gam4.mse = mean((Cscore-predict(gam4, prostate))[-sample]^2)
+gam3.mse = mean((Cscore-predict(gam3, prostate))[-sample]^2)
+gam2.mse = mean((Cscore-predict(gam2, prostate))[-sample]^2)
+gam1.mse = mean((Cscore-predict(gam1, prostate))[-sample]^2)
+testerrs = c(gam5.mse,gam4.mse,gam3.mse,gam2.mse,gam1.mse)
+testerrs
+
+```
+The model with two variables has the lowest test error, so we used this model for the rest of our analysis, to vary the degrees of freedom of the predictor variables.
+
+```{r}
+MSE = 5000
+for (i in 1:10){
+  for (j in 1:10){
+    model = gam(Cscore~s(lcp,i)+s(lpsa,j), data = train)
+    mse = mean((Cscore-predict(model, prostate))[-sample]^2)
+    if (mse < MSE){
+      i.select = i
+      j.select = j
+      MSE = mse
+    }
+  }
+}
+```
+
