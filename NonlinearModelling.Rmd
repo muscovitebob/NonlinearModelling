@@ -152,7 +152,12 @@ for (i in 2:10){
   MSE_list = c(MSE_list, mean)
 }
 best_smooth_model = smooth_list[[which.min(MSE_list)]]
-<<<<<<< HEAD
+##smoothspline_CV = smooth.spline( Cscore[sample],lpsa[sample], cv = TRUE)
+##mean((Cscore-predict(smoothspline_CV, prostate))[-sample]^2)
+plot(lpsa, Cscore)
+lines(best_smooth_model)
+fit2 = smooth.spline(lpsa, Cscore, cv=F)
+lines(fit2)
 
 ```
 
@@ -169,14 +174,6 @@ linear.mse
 poly.mse
 cubic.mse
 
-=======
-##smoothspline_CV = smooth.spline( Cscore[sample],lpsa[sample], cv = TRUE)
-##mean((Cscore-predict(smoothspline_CV, prostate))[-sample]^2)
-plot(lpsa, Cscore)
-lines(best_smooth_model)
-fit2 = smooth.spline(lpsa, Cscore, cv=F)
-lines(fit2)
->>>>>>> c819ada44f896437ee4ee1c8c770316c8385cd92
 ```
 These are the test mean square errors for the linear, polynomial and cubic spline models respectively. The polynomial regression and cubic spline are both better models than the linear regression, and the polynomial regression is still a lot better than the spline with a test MSE error of 260. 
 
@@ -240,7 +237,7 @@ aic_1 = getAIC("gam.1.",2)
 aic_1
 gam.1 = gam.1.1
 ```
-
+To select the best backwards selection model, we first manually perform backwards selection on the models. The best model with a specified number of variables is selected by using the AIC, we started for every continuous variable with the degrees of freedom set to five. We use AIC, even though the algorithm in ISLR tells us to use the R² value, since this value is readily available in the summary and we are not sure how good of a measure R² is for a GAM.
 ```{r}
 gam5 = gam(Cscore~s(lcavol,5)+s(lweight,5)+s(lcp,5)+s(lpsa,5)+svi, data = train)
 gam4 = gam(Cscore~s(lcavol,5)+s(lcp,5)+s(lpsa,5)+svi, data = train)
@@ -257,12 +254,12 @@ testerrs = c(gam5.mse,gam4.mse,gam3.mse,gam2.mse,gam1.mse)
 testerrs
 
 ```
-The model with two variables has the lowest test error, so we used this model for the rest of our analysis, to vary the degrees of freedom of the predictor variables.
+To select the best model out of all the models with different numbers of variables, we use cross-validation. The model with two variables has the lowest test error, so we used this model for the rest of our analysis, to vary the degrees of freedom of the predictor variables.
 
 ```{r}
 MSE = 5000
-for (i in 1:10){
-  for (j in 1:10){
+for (i in 1:15){
+  for (j in 1:15){
     model = gam(Cscore~s(lcp,i)+s(lpsa,j), data = train)
     mse = mean((Cscore-predict(model, prostate))[-sample]^2)
     if (mse < MSE){
@@ -272,5 +269,12 @@ for (i in 1:10){
     }
   }
 }
+i.select
+j.select
+backwards_selected = gam(Cscore~s(lcp,2)+s(lpsa,3), data = train)
+summary(backwards_selected)
 ```
+We select the model with the lowest test mean squared error as the best model. The degrees of freedom of both predictor variables is varied between one and fifteen. As we can see, the best model has two degrees of freedom for lcp, and three degrees of freedom for lpsa.
+
+## Comparison to linear models
 
