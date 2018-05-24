@@ -156,13 +156,14 @@ At last, we compare all the models to see which one gives us the best test error
 linear.mse = mean((Cscore-predict(defaultfit, prostate))[-sample]^2)
 poly.mse = mean((Cscore-predict(best_poly_model, prostate))[-sample]^2)
 cubic.mse =  mean((Cscore-predict(best_cubic, prostate))[-sample]^2)
-#smooth.mse = mean((Cscore-predict(best_smooth_model, prostate))[-sample]^2)
+
 linear.mse
 poly.mse
 cubic.mse
+smooth.mse
 
 ```
-These are the test mean square errors for the linear, polynomial and cubic spline models respectively. The polynomial regression and cubic spline are both better models than the linear regression, and the polynomial regression is still a lot better than the spline with a test MSE error of 260. 
+These are the test mean square errors for the linear, polynomial, cubic spline and smooth spline models respectively. The nonlinear models are all better predictors than the linear regression, and the polynomial regression is still a lot better than the cubic spline with a test MSE error of 260. The smooth spline model is also good, but the polynomial is still a bit better.
 
 We are a bit surprised that the polynomial regression is the best model, since it is a cubic model and the cubic spline also uses a cubic model, in this case with one knot. We think that the cause of this difference is that the knot adds too much variance in our case. 
 
@@ -265,3 +266,13 @@ We select the model with the lowest test mean squared error as the best model. T
 
 ## Comparison to linear models
 
+To compare our final model with the linear models, we also used the test error.
+
+The linear models all have a test mean squared error between 650 and 900, the test mean squared error of this backwards selected GAM model is the following:
+
+
+```{r}
+backwards_selected.mse = mean((Cscore-predict(backwards_selected, prostate))[-sample]^2)
+backwards_selected.mse
+```
+So, it is safe to conclude that this nonlinear model is a better model than all of the linear models, since it reduces the test errors by at least 63,1%, based on the best performing linear model, lasso.
