@@ -169,5 +169,8 @@ gam.all = gam(Cscore~s(lcavol,5)+s(lweight,5)+s(age,5)+s(lbph,5)+s(lcp,5)+s(lpsa
 plot(gam.all)
 gam.all.mse = mean((Cscore-predict(gam.all, prostate))[-sample]^2)
 gam.all.mse
+summary(gam.all)
 ```
-Since svi is a categorical variable, we cannot use a spline for it.
+If we look at the summary of the full GAM model, we can see that the predictor variables are all significant, or borderline significant, except for svi, because it is a categorical variable. This could be expected, since the model we use is quite flexible. 
+
+We also looked at the mean test error, which is 570 for this model. this is quite a bit lower than the forward selected model, which had a test MSE of 803. So it seems like a good model for this dataset.
