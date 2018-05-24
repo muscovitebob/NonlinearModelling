@@ -167,5 +167,7 @@ best_smooth_model = smooth_list[[which.min(MSE_list)]]
 library(gam)
 gam.all = gam(Cscore~s(lcavol,5)+s(lweight,5)+s(age,5)+s(lbph,5)+s(lcp,5)+s(lpsa,5)+svi, data = train)
 plot(gam.all)
+gam.all.mse = mean((Cscore-predict(gam.all, prostate))[-sample]^2)
+gam.all.mse
 ```
 Since svi is a categorical variable, we cannot use a spline for it.
