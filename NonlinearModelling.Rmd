@@ -157,6 +157,10 @@ for (i in 2:10){
 best_smooth_model = smooth_list[[which.min(MSE_list)]]
 ##smoothspline_CV = smooth.spline( Cscore[sample],lpsa[sample], cv = TRUE)
 ##mean((Cscore-predict(smoothspline_CV, prostate))[-sample]^2)
+plot(lpsa, Cscore)
+lines(best_smooth_model)
+fit2 = smooth.spline(lpsa, Cscore, cv=F)
+lines(fit2)
 ```
 
 
