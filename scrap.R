@@ -63,7 +63,7 @@ scope_list = list(
   "lcavol" = ~1 + lcavol + s(lcavol, df=2) + s(lcavol, df=3) + s(lcavol, df =4) + s(lcavol, df=5),
   "lweight" = ~1 + lweight + s(lweight, df=2) + s(lweight, df=3) + s(lweight, df=4) + s(lweight, df=5),
   "age" = ~1 + age + s(age, df=2) + s(age, df=3) + s(age, df=4) + s(age, df=5),
-  "lbph" = ~1 + lbph + s(lbph, df=2) + s(lbph, df=3) + s(lpbh, df=4) + s(lbph, df=5),
+  "lbph" = ~1 + lbph + s(lbph, df=2) + s(lbph, df=3) + s(lbph, df=4) + s(lbph, df=5),
   "lcp" = ~1 + lcp + s(lcp, df=2) + s(lcp, df=3) + s(lcp, df=4) + s(lcp, df=5),
   "lpsa" = ~1 + lpsa + s(lpsa, df=2) + s(lpsa, df=3) + s(lpsa, df=4) + s(lpsa, df=5)
 )
@@ -71,8 +71,8 @@ scope_list = list(
 i = 2
 #start_model = gam(Cscore~1, data=prostate)
 #start_model = gam(Cscore ~ s(as.formula(".")), data = prostate)
-#start_model = gam(Cscore~s(lcavol, df=5)+s(lweight, df=5)+s(age, df=5)+s(lbph, df=5)+s(lcp, df=5)+s(lpsa, df=5), data = prostate)
-start_model = gam(Cscore~lcavol+lbph, data=prostate)
+start_model = gam(Cscore~s(lcavol, df=5)+s(lweight, df=5)+s(age, df=5)+s(lbph, df=5)+s(lcp, df=5)+s(lpsa, df=5), data = prostate)
+#start_model = gam(Cscore~lcavol+lbph, data=prostate)
 steps = function (object, scope, scale, direction = c("both", "backward", 
                                               "forward"), trace = TRUE, keep = NULL, steps = 1000, parallel = FALSE, 
           ...) 
@@ -279,4 +279,4 @@ steps = function (object, scope, scale, direction = c("both", "backward",
   }
 }
 
-spline_step = steps(start_model, scope = scope_list, direction = "forward")
+spline_step = steps(start_model, scope = scope_list, direction = "backward")
