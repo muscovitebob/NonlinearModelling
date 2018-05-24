@@ -152,6 +152,7 @@ for (i in 2:10){
   MSE_list = c(MSE_list, mean)
 }
 best_smooth_model = smooth_list[[which.min(MSE_list)]]
+<<<<<<< HEAD
 
 ```
 
@@ -168,6 +169,14 @@ linear.mse
 poly.mse
 cubic.mse
 
+=======
+##smoothspline_CV = smooth.spline( Cscore[sample],lpsa[sample], cv = TRUE)
+##mean((Cscore-predict(smoothspline_CV, prostate))[-sample]^2)
+plot(lpsa, Cscore)
+lines(best_smooth_model)
+fit2 = smooth.spline(lpsa, Cscore, cv=F)
+lines(fit2)
+>>>>>>> c819ada44f896437ee4ee1c8c770316c8385cd92
 ```
 These are the test mean square errors for the linear, polynomial and cubic spline models respectively. The polynomial regression and cubic spline are both better models than the linear regression, and the polynomial regression is still a lot better than the spline with a test MSE error of 260. 
 
