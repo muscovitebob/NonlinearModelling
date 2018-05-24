@@ -139,28 +139,15 @@ fit$df
 Unfortunately the best possible degrees of freedom value here is quite large, and we would like to constrain ourselves to a maximum of 10 degrees of freedom.
 
 ```{r}
-lpsalims = range(lpsa)
-lpsa.grid = seq(lpsalims[1], lpsalims[2], length.out = 50)
-prediction = predict(fit, newdata = list(lpsa = lpsa.grid))
-
-smooth_list = c()
-MSE_list = c()
-for (i in 2:10){
-  model = smooth.spline(train$lpsa, train$Cscore,  df= i)
-  smooth_list = c(smooth_list, list(model))
-  lpsalims = range(train$lpsa)
-  lpsa.grid = seq(lpsalims[1], lpsalims[2], length.out = length(Cscore))
-  prediction = predict(model, newdata = list(lpsa = lpsa.grid))
-  mean = mean((Cscore - prediction$y)[-sample]^2)
-  MSE_list = c(MSE_list, mean)
-}
-best_smooth_model = smooth_list[[which.min(MSE_list)]]
-##smoothspline_CV = smooth.spline( Cscore[sample],lpsa[sample], cv = TRUE)
-##mean((Cscore-predict(smoothspline_CV, prostate))[-sample]^2)
 plot(lpsa, Cscore)
-lines(best_smooth_model)
-fit2 = smooth.spline(lpsa, Cscore, cv=F)
-lines(fit2)
+fit2 = smooth.spline(lpsa[sample], Cscore[sample], cv=T)
+lpsalims = range(lpsa)
+lpsa.grid = seq(lpsalims[1], lpsalims[2])
+prediction = predict(fit2, newdata = list(lpsa = lpsa.grid), se=T, data = prostate)
+lines(prediction)
+predictedVals = predict(fit2, test$lpsa)$y
+errors = test$Cscore - predictedVals
+mean(errors^2)
 ```
 
 

@@ -279,4 +279,6 @@ steps = function (object, scope, scale, direction = c("both", "backward",
   }
 }
 
-spline_step = steps(start_model, scope = scope_list, direction = "backward")
+GAM_step = steps(start_model, scope = scope_list, direction = "backward")
+test_MSE = mean((Cscore - predict(GAM_step, prostate))[-sample]^2)
+test_MSE
