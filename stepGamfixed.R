@@ -10,55 +10,6 @@ sample = sample.int(n = nrow(prostate), size = floor(.5*nrow(prostate)), replace
 train = prostate[sample,]
 test = prostate[-sample,]
 
-# polynomial regression
-
-poly_list = list()
-MSE_list = list()
-for (i in 1:9){
-  model = lm(Cscore~poly(lpsa,i), data=prostate, subset=sample)
-  poly_list = c(poly_list, list(model))
-  mean = mean((Cscore-predict(model,prostate))[-sample]^2)
-  MSE_list = c(MSE_list, list(mean))
-}
-best_poly_model = poly_list[[which.min(MSE_list)]]
-
-fit = lm(Cscore~poly(lpsa, 3), data = prostate)
-
-lpsalims = range(lpsa)
-lpsa.grid = seq(lpsalims[1], lpsalims[2])
-prediction = predict(fit, newdata = list(lpsa = lpsa.grid), se = T)
-SE.bands = cbind(prediction$fit+2*prediction$se.fit, prediction$fit-2*prediction$se.fit)
-
-plot(lpsa, Cscore, xlim=lpsalims)
-title("Third degree polynomial", outer = T)
-lines(lpsa.grid, prediction$fit)
-matlines(lpsa.grid, SE.bands, lwd=1, col="red", lty=2)
-
-# cubic splines
-
-# Optimising the GAM using backwards selection
-
-# first we can check for concurvity - whether some of our full GAM model terms can be approximated
-# by the others
-
-gam.all = gam(Cscore~s(lcavol,5)+s(lweight,5)+s(age,5)+s(lbph,5)+s(lcp,5)+s(lpsa,5), data = train)
-
-gam.nonrest = gam(Cscore~s(lcavol)+s(lweight)+s(age)+s(lbph)+s(lcp)+s(lpsa)+svi, data = train)
-
-#choosing df by cross validation
-j = 40
-MSE_list = rep(0, times=j)
-for (i in 1:j){
-  spline_model = gam(Cscore~s(lcavol, i)+s(lweight, i)+s(age, i)+s(lbph, i)+s(lcp, i)+s(lpsa, i)+svi, data = train)
-  mean = mean((Cscore-predict(spline_model,prostate))[-sample]^2)
-  MSE_list[i] = mean
-}
-
-ggplot(mapping=aes(x=1:j, y=MSE_list)) + geom_point()
-
-# choosing df using step and such
-#largest models allowed list
-
 scope_list = list(
   "lcavol" = ~1 + lcavol + s(lcavol, df=2) + s(lcavol, df=3) + s(lcavol, df =4) + s(lcavol, df=5),
   "lweight" = ~1 + lweight + s(lweight, df=2) + s(lweight, df=3) + s(lweight, df=4) + s(lweight, df=5),
@@ -68,12 +19,12 @@ scope_list = list(
   "lpsa" = ~1 + lpsa + s(lpsa, df=2) + s(lpsa, df=3) + s(lpsa, df=4) + s(lpsa, df=5)
 )
 
-i = 2
-#start_model = gam(Cscore~1, data=prostate)
-#start_model = gam(Cscore ~ s(as.formula(".")), data = prostate)
 start_model = gam(Cscore~s(lcavol, df=5)+s(lweight, df=5)+s(age, df=5)+s(lbph, df=5)+s(lcp, df=5)+s(lpsa, df=5), data = prostate)
-#start_model = gam(Cscore~lcavol+lbph, data=prostate)
-steps = function (object, scope, scale, direction = c("both", "backward", 
+
+
+# This function was written by Trevor Hastie as part of the gam package.
+# It is reproduced here for ease of debugging and troubleshooting.
+step.Gam.mod = function (object, scope, scale, direction = c("both", "backward", 
                                               "forward"), trace = TRUE, keep = NULL, steps = 1000, parallel = FALSE, 
           ...) 
 {
@@ -279,6 +230,9 @@ steps = function (object, scope, scale, direction = c("both", "backward",
   }
 }
 
-GAM_step = steps(start_model, scope = scope_list, direction = "backward")
-test_MSE = mean((Cscore - predict(GAM_step, prostate))[-sample]^2)
+GAM_step_full = step.Gam.mod(start_model, scope = scope_list, direction = "backward")
+
+start_model_train = gam(Cscore~s(lcavol, df=5)+s(lweight, df=5)+s(age, df=5)+s(lbph, df=5)+s(lcp, df=5)+s(lpsa, df=5), data = train)
+GAM_step_train = step.Gam.mod(start_model_train, scope = scope_list, direction = "backward")
+test_MSE = mean((Cscore - predict(GAM_step_train, prostate))[-sample]^2)
 test_MSE

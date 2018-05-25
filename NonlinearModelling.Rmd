@@ -1,9 +1,12 @@
 ---
 title: "Nonlinear Modelling"
-output: html_notebook
+author: "Thomas Vanpoucke, Boris Shilov"
+output:
+  pdf_document: default
+  html_notebook: default
 ---
 
-```{r}
+```{r echo = FALSE, include = FALSE}
 library(nlme)
 library(ggplot2)
 set.seed(10)
@@ -13,7 +16,7 @@ attach(prostate)
 options(digits=3)
 ```
 
-# Exploring the association between Cscore and lpsa
+# Exploring the association
 
 First we randomise the rows and split the data set into a training and validation subset.
 ```{r}
@@ -81,7 +84,7 @@ best_poly_model = lm(Cscore~poly(lpsa, 3), data = prostate)
 
 lpsalims = range(lpsa)
 lpsa.grid = seq(lpsalims[1], lpsalims[2], length.out = 50)
-prediction = predict(fit, newdata = list(lpsa = lpsa.grid), se = T)
+prediction = predict(best_poly_model, newdata = list(lpsa = lpsa.grid), se = T)
 SE.bands = cbind(prediction$fit+2*prediction$se.fit, prediction$fit-2*prediction$se.fit)
 
 plot(lpsa, Cscore, xlim=lpsalims)
@@ -114,7 +117,7 @@ best_cubic = lm(Cscore~bs(lpsa, df = 4),data=prostate, subset=sample)
 
 lpsalims = range(lpsa)
 lpsa.grid = seq(lpsalims[1], lpsalims[2], length.out = 50)
-prediction = predict(fit, newdata = list(lpsa = lpsa.grid), se = T)
+prediction = predict(best_cubic, newdata = list(lpsa = lpsa.grid), se = T)
 SE.bands = cbind(prediction$fit+2*prediction$se.fit, prediction$fit-2*prediction$se.fit)
 
 plot(lpsa, Cscore, xlim=lpsalims)
@@ -126,31 +129,25 @@ matlines(lpsa.grid, SE.bands, lwd=1, col="red", lty=2)
 
 ## Smoothing Splines
 
-The last model we construct is a smoothing spline. Since we have duplicated values present in lpsa, we can use generalised cross validation to arrive at the best possible value of the tuning parameter, with best defined as the lowest cross-validated RSS.
+The last model we construct is a smoothing spline. We can use the built in leave-out-one cross validation to arrive at a good model with a degrees of freedom value within the desired range.
 
-```{r}
-fit = smooth.spline(lpsa, Cscore, cv = F)
-fit$df
-```
-
-Unfortunately the best possible degrees of freedom value here is quite large, and we would like to constrain ourselves to a maximum of 10 degrees of freedom.
-
-```{r}
+```{r warning = FALSE}
 plot(lpsa, Cscore)
 fit2 = smooth.spline(lpsa[sample], Cscore[sample], cv=T)
 lpsalims = range(lpsa)
-lpsa.grid = seq(lpsalims[1], lpsalims[2])
+lpsa.grid = seq(lpsalims[1], lpsalims[2], length.out = 50)
 prediction = predict(fit2, newdata = list(lpsa = lpsa.grid), se=T, data = prostate)
 lines(prediction)
+fit2$df
 predictedVals = predict(fit2, test$lpsa)$y
 errors = test$Cscore - predictedVals
 smooth.mse = mean(errors^2)
 smooth.mse
 ```
 
-## Comparison of all the models with the linear model
+## Model comparison
 
-At last, we compare all the models to see which one gives us the best test error.
+We compare all the models to see which one gives us the best test MSE.
 
 ```{r}
 linear.mse = mean((Cscore-predict(defaultfit, prostate))[-sample]^2)
@@ -163,13 +160,13 @@ cubic.mse
 smooth.mse
 
 ```
-These are the test mean square errors for the linear, polynomial, cubic spline and smooth spline models respectively. The nonlinear models are all better predictors than the linear regression, and the polynomial regression is still a lot better than the cubic spline with a test MSE error of 260. The smooth spline model is also good, but the polynomial is still a bit better.
+These are the test mean square errors for the linear, polynomial, cubic spline and smooth spline models, respectively. The nonlinear models all have better performance than the linear regression, and the polynomial regression is still better than the cubic spline with a test MSE error of 260. Even the cubic spline, which is the worst performing of these nonlinear models, has almost halved the test MSE.
 
-We are a bit surprised that the polynomial regression is the best model, since it is a cubic model and the cubic spline also uses a cubic model, in this case with one knot. We think that the cause of this difference is that the knot adds too much variance in our case. 
+We surprised that the polynomial regression is the best model, since it is a cubic model and the cubic spline also uses a cubic model, in this case with one knot. We posit that the cause of this difference is that the knot adds undesired variance.
 
+# General additive model
 
-
-# General additive model with all variables
+## All variables
 ```{r}
 library(gam)
 gam.all = gam(Cscore~s(lcavol,5)+s(lweight,5)+s(age,5)+s(lbph,5)+s(lcp,5)+s(lpsa,5)+svi, data = train)
@@ -177,14 +174,18 @@ plot(gam.all)
 gam.all.mse = mean((Cscore-predict(gam.all, prostate))[-sample]^2)
 gam.all.mse
 summary(gam.all)
+gam.all.mse
 ```
-If we look at the summary of the full GAM model, we can see that the predictor variables are all significant, or borderline significant, except for svi, because it is a categorical variable. This could be expected, since the model we use is quite flexible. 
 
-We also looked at the mean test error, which is 570 for this model. this is quite a bit lower than the forward selected model, which had a test MSE of 803. So it seems like a good model for this dataset.
+If we look at the summary of the full GAM model, we can see that the predictor variables are all significant or almost significant, excepting svi, because it is a categorical variable. This was to be expected as the model we use is quite flexible. 
 
-We can also see that the model is not as smooth near the edges for some of the predictors. This is because of the sparseness of the data near the outliers. All in all, we think that this model is good.
+We also looked at the test MSE, which is 570 for this model. This is much lower than the forward selected model from our previous work, which had a test MSE of 803. Thus it is a better model.
 
-# Backwards selection of the General Additive Model
+We can also see that the model is not as smooth near the edges for some of the predictors. This is because of the sparseness of the data at these extreme values.
+
+The model is thus an improvement on our previous work.
+
+## Backward selection
 
 ```{r}
 getAIC <- function(data, nbloops){
@@ -225,7 +226,9 @@ aic_1 = getAIC("gam.1.",2)
 aic_1
 gam.1 = gam.1.1
 ```
-To select the best backwards selection model, we first manually perform backwards selection on the models. The best model with a specified number of variables is selected by using the AIC, we started for every continuous variable with the degrees of freedom set to five. We use AIC, even though the algorithm in ISLR tells us to use the R² value, since this value is readily available in the summary and we are not sure how good of a measure R² is for a GAM.
+
+To pick the best GAM using backward selection, we first manually perform backwards selection on the models. The best model with a specified number of variables is selected by using the AIC. A starting model includes every continuous variable with the degrees of freedom set to five. We use AIC instead of R² value since this value is readily available in the summary and we are not confident R² is a good measure for evaluating a GAM.
+
 ```{r}
 gam5 = gam(Cscore~s(lcavol,5)+s(lweight,5)+s(lcp,5)+s(lpsa,5)+svi, data = train)
 gam4 = gam(Cscore~s(lcavol,5)+s(lcp,5)+s(lpsa,5)+svi, data = train)
@@ -242,7 +245,8 @@ testerrs = c(gam5.mse,gam4.mse,gam3.mse,gam2.mse,gam1.mse)
 testerrs
 
 ```
-To select the best model out of all the models with different numbers of variables, we use cross-validation. The model with two variables has the lowest test error, so we used this model for the rest of our analysis, to vary the degrees of freedom of the predictor variables.
+
+To select the best model out of all the models with different numbers of variables, we use cross-validation. The model with two variables has the lowest test MSE, so we used this model for the rest of our analysis, to vary the degrees of freedom of the predictor variables.
 
 ```{r}
 MSE = 5000
@@ -257,22 +261,37 @@ for (i in 1:15){
     }
   }
 }
-i.select
-j.select
 backwards_selected = gam(Cscore~s(lcp,2)+s(lpsa,3), data = train)
 summary(backwards_selected)
 ```
-We select the model with the lowest test mean squared error as the best model. The degrees of freedom of both predictor variables is varied between one and fifteen. As we can see, the best model has two degrees of freedom for lcp, and three degrees of freedom for lpsa.
+
+We select the model with the lowest test MSE as the best model. The degrees of freedom of both predictor variables is varied between one and fifteen. As we can see, the best model has two degrees of freedom for lcp, and three degrees of freedom for lpsa.
+
+We have also troubleshooted a backward selection algorithm provided as part of the gam package, in the form of the step.Gam function. The code is available in stepGamfixed.R and is not reproduced here for brevity. The result differs on whether we attempt backward selection with the full data or with a halved training set.
+
+The full dataset takes 19 steps to converge on the model:
+
+$$
+Cscore = lcavol + age + s(lcp, 4) + s(lpsa, 5)
+$$
+
+The training set takes seven steps to converge on the model:
+
+$$
+Cscore = lcavol + s(lweight, 5) + s(age, 5) + s(lbph, 2) + s(lcp, 5) + s(lpsa, 5)
+$$
+
+This has a test MSE of 583. The differences from our implementation can probably be explained by the extra sophistication of the step.Gam implementation, but also demonstrate once again that stepwise variable selection can lead to very varying results and should normally be done extremely carefully, if at all.
 
 ## Comparison to linear models
 
-To compare our final model with the linear models, we also used the test error.
+To compare our final model with the linear models, we also used the test MSE.
 
-The linear models all have a test mean squared error between 650 and 900, the test mean squared error of this backwards selected GAM model is the following:
-
+The linear models all have a test MSE between 650 and 900, the test mean squared error of our manually backward selected GAM model is the following:
 
 ```{r}
 backwards_selected.mse = mean((Cscore-predict(backwards_selected, prostate))[-sample]^2)
 backwards_selected.mse
 ```
-So, it is safe to conclude that this nonlinear model is a better model than all of the linear models, since it reduces the test errors by at least 63,1%, based on the best performing linear model, lasso.
+
+It is safe to conclude that this nonlinear model is a better model than all of the linear models, since it reduces the test errors by at least $63.1\%$ compared on the best performing linear model - lasso.
